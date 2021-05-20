@@ -10,9 +10,14 @@ Without this flag, the script assumes you're trying to Tweet, and it will tell y
 ```
 $ python main.py -local -manual J0002+6216
 ```
+If you don't use the `-local` flag, it also expects there to be a subdirectory called `tweeted_pulsars`, which it checks each time to make sure it's not tweeting a pulsar it's already tweeted. However, if you're just running things locally, no need to make that subdirectory - it shouldn't look for one unless it's tweeting.
+
 Before running this, make sure you add in two lines: one specifying the directory the script and file are in, and one specifying the name of the catalog file. The database copy I have here is named `psrcat.db`, but if you download directly from ATNF's website, it might be named differently. In my script, then, I have the lines
 ```
 directory = \path\to\file\
 database = 'psrcat.db'
 ```
+
 The two non-standard libraries used here are Astropy and Tweepy; the latter really only matters if you're tweeting. You could really just remove that import if you don't have Tweepy installed and are just running the script locally.
+
+Yes, this code is not great, and improvements are coming. Suggestions and contributions are always welcome!
