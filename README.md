@@ -10,9 +10,9 @@ Without this flag, the script assumes you're trying to Tweet, and it will tell y
 ```
 $ python main.py -local -manual J0002+6216
 ```
-Before running this, make sure you add in two lines: one specifying the directory the script and file are in, and one specifying the name of the catalog file. The database copy I have here is named `psrcat.db`, but if you download directly from ATNF's website, it *might* be named differently. In my script, then, I have the lines
+Before running this, make sure you add in two lines: one specifying the directory the script and file are in, and one specifying the name of the catalog file. The database copy I have here is named `psrcat.db`, but if you download directly from ATNF's website, it might be named differently. In my script, then, I have the lines
 ```
-directory = \path\to\file
+directory = \path\to\file\
 database = 'psrcat.db'
 ```
 The two non-standard libraries used here are Astropy and Tweepy; the latter really only matters if you're tweeting.
