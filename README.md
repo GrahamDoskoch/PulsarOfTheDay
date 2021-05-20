@@ -15,4 +15,4 @@ Before running this, make sure you add in two lines: one specifying the director
 directory = \path\to\file\
 database = 'psrcat.db'
 ```
-The two non-standard libraries used here are Astropy and Tweepy; the latter really only matters if you're tweeting.
+The two non-standard libraries used here are Astropy and Tweepy; the latter really only matters if you're tweeting. You could really just remove that import if you don't have Tweepy installed and are just running the script locally.
