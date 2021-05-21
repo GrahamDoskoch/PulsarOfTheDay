@@ -8,6 +8,7 @@ import os
 import random
 import sys
 import tweepy
+import wikipediaapi as wiki
 from astropy import units as u
 from astropy.coordinates import Angle
 from astropy.coordinates import SkyCoord
@@ -57,25 +58,30 @@ while True:
         # but most of those have no period derivative, and the vast, vast
         # majority have a spin frequency listed instead.
         psr_name = param_dict['PSRJ']
+        if 'PSRB' not in param_dict.keys():
+            param_dict['PSRB'] = None
         if '{}.png'.format(psr_name) not in os.listdir('{}\\tweeted_pulsars'.format(directory)) or args.local:
             if set(['PSRJ', 'RAJ', 'DECJ', 'F0', 'F1', 'DM']).issubset(set(param_dict.keys())):
                 valid_input = True
     # A pulsar has been specified; checks to see that it's listed
     else:
         for pulsar in catalog:
-            if args.manual == pulsar[0][1]:
+            param_names = [pulsar[i][0] for i in range(len(pulsar))]
+            param_quants = [pulsar[i][1] for i in range(len(pulsar))]
+            param_dict = {}
+            for i in range(len(param_names)):
+                param_dict[param_names[i]] = param_quants[i]
+            if 'PSRB' not in param_dict.keys():
+                param_dict['PSRB'] = None
+            if args.manual in [param_dict['PSRJ'], param_dict['PSRB']]:
                 print('{} in catalog.'.format(args.manual))
                 valid_input = True
-                psr = pulsar
-                param_names = [psr[i][0] for i in range(len(psr))]
-                param_quants = [psr[i][1] for i in range(len(psr))]
-                param_dict = {}
-                for i in range(len(param_names)):
-                    param_dict[param_names[i]] = param_quants[i]
+                break
         if valid_input != True:
             print('{} not in catalog. Ending script.'.format(args.manual))
             sys.exit()
 
+psr_bname = param_dict['PSRB']
 psr_name = param_dict['PSRJ']
 psr_ra = param_dict['RAJ']
 psr_dec = param_dict['DECJ']
@@ -88,6 +94,10 @@ psr_char_age = (psr_period/(2*psr_pdot)).to(u.yr)
 psr_B_S = 10**12 * np.sqrt(psr_pdot/(10**(-15))) * np.sqrt(psr_period/u.s) * u.G
 # It may be worth adding other quantities, like spindown luminosity or distance
 
+# Checks which telescopes should be able to observe the pulsar
+# based purely on public declination ranges. It doesn't make the
+# distinction between visiblity and detectability, i.e. whether
+# a pulsar is too faint to be detected by a given telescope.
 visible_telescopes = ''
 def dec_to_deg(dec):
     dec = dec.split(':')
@@ -107,6 +117,19 @@ if visible_telescopes != '':
     visible_telescopes = '\n' + 'Visible from: ' + visible_telescopes
     visible_telescopes = visible_telescopes[:-2]
 
+# Checks to see if Wikipedia page exists under either name and
+# adds link to page if one exists
+language = "en"
+wikipedia = wiki.Wikipedia(language)
+pulsar_page = wikipedia.page('PSR_{}'.format(psr_name))
+pulsar_b_page = wikipedia.page('PSR_{}'.format(psr_bname))
+if pulsar_page.exists():
+    wiki_link = '\n' + 'Wikipedia: https://wikipedia.org/wiki/PSR_{}'.format(psr_name)
+elif pulsar_b_page.exists():
+    wiki_link = '\n' + 'Wikipedia: https://wikipedia.org/wiki/PSR_{}'.format(psr_b_name)
+else:
+    wiki_link = ''
+
 output = 'Pulsar: {}\n'.format(psr_name) +\
          'RA: {}\n'.format(psr_ra) +\
          'Dec: {}\n'.format(psr_dec) +\
@@ -115,7 +138,8 @@ output = 'Pulsar: {}\n'.format(psr_name) +\
          'DM: {} pc/cm3\n'.format(psr_dm.value) +\
          'Characteristic age: {:.3e} yr\n'.format(psr_char_age.value) +\
          'Surface magnetic field: {:.3e} G'.format(round(psr_B_S.value, 3)) +\
-         visible_telescopes
+         visible_telescopes +\
+         wiki_link
 
 pers = []
 pdots = []
