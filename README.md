@@ -18,6 +18,6 @@ directory = \path\to\file\
 database = 'psrcat.db'
 ```
 
-The two non-standard libraries used here are Astropy and Tweepy; the latter really only matters if you're tweeting. You could really just remove that import if you don't have Tweepy installed and are just running the script locally.
+The non-standard libraries used here are Astropy, Matplotlib, Numpy, Tweepy and Wikipedia-APi. Tweepy really only matters if you're tweeting; you could really just remove that import if you don't have Tweepy installed and are just running the script locally.
 
 Yes, this code is not great, and improvements are coming. Suggestions and contributions are always welcome!
