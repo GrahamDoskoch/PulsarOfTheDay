@@ -160,6 +160,8 @@ else:
         flux_freq = pair[0][1:]
         flux_val = pair[1]
         is_flux = True
+    else:
+        is_flux = False
 if is_flux == True:
     flux_density_str = '\n' + 'Flux density: {} MHz: {} mJy'.format(flux_freq, flux_val)
 else:
