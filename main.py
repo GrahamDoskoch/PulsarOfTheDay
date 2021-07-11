@@ -173,10 +173,10 @@ output = 'Pulsar: {}\n'.format(psr_name) +\
          'Period: {:.3e} s\n'.format(round(psr_period.value, 3)) +\
          'Pdot: {:.3e}\n'.format(psr_pdot) +\
          'DM: {} pc/cm3\n'.format(psr_dm.value) +\
+         flux_density_str +\
          'Characteristic age: {:.3e} yr\n'.format(psr_char_age.value) +\
          'Surface magnetic field: {:.3e} G'.format(round(psr_B_S.value, 3)) +\
-         visible_telescopes +\
-         flux_density_str
+         visible_telescopes
 
 if len(output + wiki_link) > 280:
     print('Wikipedia link exists but will not be included; length of Tweet' +\
