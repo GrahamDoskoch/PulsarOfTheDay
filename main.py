@@ -6,12 +6,21 @@ import matplotlib.pyplot as plt
 import numpy as np
 import os
 import random
+import requests
 import sys
 import tweepy
 import wikipediaapi as wiki
 from astropy import units as u
 from astropy.coordinates import Angle
 from astropy.coordinates import SkyCoord
+
+directory = 'C:\\Users\\Graham\\Documents\\psrcat_tar'
+database = 'psrcat.db'
+# Bearer token: AAAAAAAAAAAAAAAAAAAAAP%2B1PgEAAAAAaRCJWys9UPeS77CK01ouiRK9iQA%3DU3WOPGD9nXF18QQhSs1qOYEFcmJjo57FCKw8AJxmQWirRUDFlD
+consumer_key = 'i627fK1lEqpOxQy02OWDCmb46'
+consumer_secret = 'KdTXCYWbw40bGZoCWT9QSYn6H5fgeaF8nAVtvj1Mq2BowAy7Lw'
+access_token = '1393615341788532737-1CF14NO4d0GH8a3CSUCpiT4IGTPijH'
+access_token_secret = 'HKGfNSzTQaQzDY1v9T6qrHKIBFyZdYVW7VmWkalzoqLpg'
 
 # I've added the ability to run the script in different modes. The
 # default is to tweet out the results, but you can use the -local
@@ -130,6 +139,32 @@ elif pulsar_b_page.exists():
 else:
     wiki_link = ''
 
+# Looks for flux densities. If values are listed at 400 or 1400 MHz,
+# those are used; if they're not but flux densities are listed at other
+# frequencies, one of those is randomly chosen.
+flux_densities = []
+if 'S400' in param_dict.keys():
+    flux_freq = 400
+    flux_val = param_dict['S400']
+    is_flux = True
+elif 'S1400' in param_dict.keys():
+    flux_freq = 1400
+    flux_val = param_dict['S1400']
+    is_flux = True
+else:
+    for key in param_dict.keys():
+        if key[0] == 'S' and key[1:].isnumeric():
+            flux_densities.append([int(key[1:]), param_dict[key]])
+    if flux_densities != []:
+        pair = random.choice(flux_densities)
+        flux_freq = pair[0][1:]
+        flux_val = pair[1]
+        is_flux = True
+if is_flux == True:
+    flux_density_str = '\n' + 'Flux density: {} MHz: {} mJy'.format(flux_freq, flux_val)
+else:
+    flux_density_str = ''
+
 output = 'Pulsar: {}\n'.format(psr_name) +\
          'RA: {}\n'.format(psr_ra) +\
          'Dec: {}\n'.format(psr_dec) +\
@@ -139,7 +174,13 @@ output = 'Pulsar: {}\n'.format(psr_name) +\
          'Characteristic age: {:.3e} yr\n'.format(psr_char_age.value) +\
          'Surface magnetic field: {:.3e} G'.format(round(psr_B_S.value, 3)) +\
          visible_telescopes +\
-         wiki_link
+         flux_density_str
+
+if len(output + wiki_link) > 280:
+    print('Wikipedia link exists but will not be included; length of Tweet' +\
+          ' would be {} characters.'.format(len(output + wiki_link)))
+else:
+    output += wiki_link
 
 pers = []
 pdots = []
@@ -211,6 +252,8 @@ ax1.set_ylim(10**(-22), 10**(-10))
 ax1.set_xlabel('Period (s)')
 ax1.set_ylabel('Period derivative (s s$^{-1}$)')
 ax1.legend()
+#plt.savefig('C:\\Users\\Graham\\Documents\\psrcat_tar\\ppdot.png', bbox_inches="tight")
+#plt.show()
 
 # Skymap in galactic coordinates. The projection should arguably
 # be something besides an Aitoff projection, but eh.
@@ -242,6 +285,8 @@ psr_l_rad = psr_c.l.wrap_at(180* u.deg).radian
 psr_b_rad = psr_c.b.radian
 ax2.scatter(psr_l_rad, psr_b_rad, c='r', label=psr_name)
 ax2.legend()
+#plt.savefig('C:\\Users\\Graham\\Documents\\psrcat_tar\\skymap.png', bbox_inches="tight")
+#plt.show()
 
 fig = plt.gcf()
 fig.set_size_inches(12.0, 7.0)
