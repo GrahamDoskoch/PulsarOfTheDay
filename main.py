@@ -165,7 +165,7 @@ else:
     else:
         is_flux = False
 if is_flux == True:
-    flux_density_str = 'Flux density: {} MHz: {} mJy\n'.format(flux_freq, flux_val)
+    flux_density_str = 'Flux density at {} MHz: {} mJy\n'.format(flux_freq, flux_val)
 else:
     flux_density_str = ''
 
