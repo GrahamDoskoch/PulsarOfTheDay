@@ -116,8 +116,10 @@ def dec_to_deg(dec):
     return Angle(tuple(dec), u.deg).degree
 dec_ranges = {'Arecibo': ['-1:00:00', '37:30:00'],
     'CHIME': ['-15:00:00', '90:00:00'],
+    'Effelsberg': ['-30:00:00', '90:00:00'],
     'FAST': ['-14:12:00', '65:48:00'],
     'GBT': ['-46:00:00', '90:00:00'],
+    'Parkes': ['-90:00:00', '25:00:00'],
     'VLA': ['-44:00:00', '90:00:00']}
 for telescope in dec_ranges.keys():
     lower = dec_to_deg(dec_ranges[telescope][0])
