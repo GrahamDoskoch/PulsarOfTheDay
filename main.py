@@ -13,6 +13,8 @@ import wikipediaapi as wiki
 from astropy import units as u
 from astropy.coordinates import Angle
 from astropy.coordinates import SkyCoord
+from bs4 import BeautifulSoup
+from urllib.request import urlopen
 
 # The directory where the database is being stored must be specified, as must the relevant credentials
 # for the Twitter account. I've removed mine from the public version of the script, for security
@@ -24,11 +26,11 @@ consumer_secret = ''
 access_token = ''
 access_token_secret = ''
 
-# I've added the ability to run the script in different modes. The
-# default is to tweet out the results, but you can use the -local
-# flag to run things without tweeting, in which case the parameters
-# and plots will be displayed. The -manual flag lets you specify
-# a particular pulsar by name.
+# The script can be run in different modes. The default is to tweet
+# out the results, but you can use the -local flag to run things
+# without tweeting, in which case the parameters and plots will be
+# displayed. The -manual flag lets you specify a particular pulsar
+# by name.
 parser = argparse.ArgumentParser()
 parser.add_argument('-local', action='store_true')
 parser.add_argument('-manual')
@@ -63,6 +65,7 @@ while True:
         param_names = [psr[i][0] for i in range(len(psr))]
         param_quants = [psr[i][1] for i in range(len(psr))]
         param_dict = {}
+        param_dict['RM'] = None
         for i in range(len(param_names)):
             param_dict[param_names[i]] = param_quants[i]
         # Some pulsars have a period listed instead of a spin frequency,
@@ -80,6 +83,7 @@ while True:
             param_names = [pulsar[i][0] for i in range(len(pulsar))]
             param_quants = [pulsar[i][1] for i in range(len(pulsar))]
             param_dict = {}
+            param_dict['RM'] = None
             for i in range(len(param_names)):
                 param_dict[param_names[i]] = param_quants[i]
             if 'PSRB' not in param_dict.keys():
@@ -92,6 +96,7 @@ while True:
             print('{} not in catalog. Ending script.'.format(args.manual))
             sys.exit()
 
+
 psr_bname = param_dict['PSRB']
 psr_name = param_dict['PSRJ']
 psr_ra = param_dict['RAJ']
@@ -101,6 +106,7 @@ psr_fdot = float(param_dict['F1'])
 psr_period = (1/psr_freq)*u.s
 psr_pdot = -(1/psr_freq**2)*psr_fdot
 psr_dm = float(param_dict['DM'])*u.pc/(u.cm)**3
+psr_rm = param_dict['RM']
 psr_char_age = (psr_period/(2*psr_pdot)).to(u.yr)
 psr_B_S = 10**12 * np.sqrt(psr_pdot/(10**(-15))) * np.sqrt(psr_period/u.s) * u.G
 # It may be worth adding other quantities, like spindown luminosity or distance
@@ -130,18 +136,24 @@ if visible_telescopes != '':
     visible_telescopes = '\n' + 'Visible from: ' + visible_telescopes
     visible_telescopes = visible_telescopes[:-2]
 
+# Currently a problem with getting the pulsar page
+"""
 # Checks to see if Wikipedia page exists under either name and
 # adds link to page if one exists
 language = "en"
 wikipedia = wiki.Wikipedia(language)
 pulsar_page = wikipedia.page('PSR_{}'.format(psr_name))
 pulsar_b_page = wikipedia.page('PSR_{}'.format(psr_bname))
+print(pulsar_page)
 if pulsar_page.exists():
+    print('y')
     wiki_link = '\n' + 'Wikipedia: https://wikipedia.org/wiki/PSR_{}'.format(psr_name)
 elif pulsar_b_page.exists():
-    wiki_link = '\n' + 'Wikipedia: https://wikipedia.org/wiki/PSR_{}'.format(psr_b_name)
+    wiki_link = '\n' + 'Wikipedia: https://wikipedia.org/wiki/PSR_{}'.format(psr_bname)
 else:
     wiki_link = ''
+"""
+wiki_link = ''
 
 # Looks for flux densities. If values are listed at 400 or 1400 MHz,
 # those are used; if they're not but flux densities are listed at other
@@ -174,10 +186,14 @@ else:
 output = 'Pulsar: {}\n'.format(psr_name) +\
          'RA: {}\n'.format(psr_ra) +\
          'Dec: {}\n'.format(psr_dec) +\
-         'Period: {:.3e} s\n'.format(round(psr_period.value, 3)) +\
+         'Period: {:.3e} s\n'.format(psr_period.value, 3) +\
          'Pdot: {:.3e}\n'.format(psr_pdot) +\
-         'DM: {} pc/cm3\n'.format(psr_dm.value) +\
-         flux_density_str +\
+         'DM: {} pc/cm3\n'.format(psr_dm.value)
+         
+if psr_rm != None:
+    output += 'RM: {} rad/m^2\n'.format(psr_rm)
+    
+output += flux_density_str +\
          'Characteristic age: {:.3e} yr\n'.format(psr_char_age.value) +\
          'Surface magnetic field: {:.3e} G'.format(round(psr_B_S.value, 3)) +\
          visible_telescopes
@@ -187,6 +203,8 @@ if len(output + wiki_link) > 280:
           ' would be {} characters.'.format(len(output + wiki_link)))
 else:
     output += wiki_link
+    
+Output = 'TEST' + '\n' + output
 
 pers = []
 pdots = []
@@ -224,6 +242,14 @@ for j in range(1000):
 
 # P-Pdot diagram
 ax1 = plt.subplot(121)
+#for i in range(len(pers)):
+#    p = pers[i]
+#    pdot = pdots[i]
+#    if pdot > 10**(-16):
+#        color = '#0057b7'
+#    else:
+#        color = '#ffd700'
+#    plt.scatter([p], [pdot], c=color)
 ax1.scatter(pers, pdots)
 ax1.scatter([psr_period.value], [psr_pdot], c='r', label=psr_name)
 # I currently have Vela, the Crab and Geminga, but I think it might
@@ -258,7 +284,7 @@ ax1.set_ylim(10**(-22), 10**(-10))
 ax1.set_xlabel('Period (s)')
 ax1.set_ylabel('Period derivative (s s$^{-1}$)')
 ax1.legend()
-#plt.savefig('C:\\Users\\Graham\\Documents\\psrcat_tar\\ppdot.png', bbox_inches="tight")
+#plt.savefig(directory + '\\ppdot.png', bbox_inches="tight")
 #plt.show()
 
 # Skymap in galactic coordinates. The projection should arguably
@@ -275,6 +301,14 @@ for i in range(len(names)):
     l_list.append(l_rad)
     b_list.append(b_rad)
 ax2.grid(True)
+#for i in range(len(l_list)):
+    #l = l_list[i]
+    #b = b_list[i]
+    #if b > 0:
+    #    color = '#0057b7'
+    #else:
+    #    color = '#ffd700'
+    #ax2.scatter(l, b, c=color)
 ax2.scatter(l_list, b_list)
     
 ra_l = psr_ra.split(':')
@@ -291,11 +325,60 @@ psr_l_rad = psr_c.l.wrap_at(180* u.deg).radian
 psr_b_rad = psr_c.b.radian
 ax2.scatter(psr_l_rad, psr_b_rad, c='r', label=psr_name)
 ax2.legend()
-#plt.savefig('C:\\Users\\Graham\\Documents\\psrcat_tar\\skymap.png', bbox_inches="tight")
+#plt.savefig(directory + '\\skymap.png', bbox_inches="tight")
 #plt.show()
 
 fig = plt.gcf()
 fig.set_size_inches(12.0, 7.0)
+
+def get_profile(jname, bname):
+    is_webpage = False
+    for name in [jname, bname]:
+        url = 'http://rian.kharkov.ua/decameter/EPN/epndb/{}/'.format(name)
+        response = requests.get(url)
+        if response.status_code == 200:
+            is_webpage = True
+            
+            # Courtesy of https://stackoverflow.com/a/24618186/6535830
+            html = urlopen(url).read()
+            soup = BeautifulSoup(html, features="html.parser")
+
+            # kill all script and style elements
+            for script in soup(["script", "style"]):
+                script.extract()    # rip it out
+
+            # get text
+            text = soup.get_text()
+
+            # break into lines and remove leading and trailing space on each
+            lines = (line.strip() for line in text.splitlines())
+            # break multi-headlines into a line each
+            chunks = (phrase.strip() for line in lines for phrase in line.split("  "))
+            # drop blank lines
+            text = '\n'.join(chunk for chunk in chunks if chunk)
+            
+            text = text.split('\n')
+            freqs = []
+            for line in text:
+                if 'GHz' in line:
+                    freq = line.replace(' GHz', '')
+                    freqs.append(float(freq))
+            
+            chosen_freq = random.choice(freqs)
+            chosen_index = text.index('{} GHz'.format(chosen_freq))
+            survey_index = chosen_index + 5
+            survey_name = text[survey_index].split(' ')[1]
+            
+            mhz_freq = int(float(chosen_freq) * 1000)
+            image_url = 'http://rian.kharkov.ua/decameter/EPN/epndb/{}/{}_{}.epn.gif'.format(name, survey_name, mhz_freq)
+            with open('{}\\tweeted_pulsars\\{}_profile.gif'.format(directory, jname), 'wb') as f:
+                f.write(requests.get(image_url).content)
+            print('Image {}_profile.gif downloaded.'.format(jname))
+            
+    if is_webpage != True:
+        print('No image available.')
+        
+    return is_webpage
 
 if args.local:
     print(output)
@@ -307,7 +390,19 @@ else:
         auth.set_access_token(access_token, access_token_secret)
         api = tweepy.API(auth, wait_on_rate_limit=True,
             wait_on_rate_limit_notify=True)
-        api.update_with_media(filename="{}\\tweeted_pulsars\\{}.png".format(directory, psr_name), status=output)
+        # Solution from https://stackoverflow.com/a/43660687/6535830
+        filenames = ["{}\\tweeted_pulsars\\{}.png".format(directory, psr_name)]
+        media_ids = []
+        # The EPN website with profiles is based in Kharkiv and
+        # is currently down due .
+        #if get_profile(psr_name, psr_bname) == True:
+        #    filenames.append("{}\\tweeted_pulsars\\{}_profile.gif".format(directory, psr_name))
+        for filename in filenames:
+            res = api.media_upload(filename)
+            media_ids.append(res.media_id)
+        api.update_status(status=output, media_ids=media_ids)
         print("Tweeting successful!")
-    except tweepy.error.TweepError:
-        print("Invalid account credentials.")
+    except tweepy.error.TweepError as e:
+        print("Tweepy error!")
+        print(e)
+        #print("Invalid account credentials.")
