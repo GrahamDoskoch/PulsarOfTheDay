@@ -26,6 +26,9 @@ consumer_secret = ''
 access_token = ''
 access_token_secret = ''
 
+pta_file = 'pta_pulsars.yaml'
+pta_database = yaml.load(open(pta_file))
+
 # The script can be run in different modes. The default is to tweet
 # out the results, but you can use the -local flag to run things
 # without tweeting, in which case the parameters and plots will be
@@ -95,7 +98,6 @@ while True:
         if valid_input != True:
             print('{} not in catalog. Ending script.'.format(args.manual))
             sys.exit()
-
 
 psr_bname = param_dict['PSRB']
 psr_name = param_dict['PSRJ']
@@ -183,6 +185,11 @@ if is_flux == True:
 else:
     flux_density_str = ''
 
+pta_list = ''
+for pta in pta_database.keys():
+    if psr_name in pta_database[pta] or psr_bname in pta_database[pta]:
+        pta_list += pta + ', '
+    
 output = 'Pulsar: {}\n'.format(psr_name) +\
          'RA: {}\n'.format(psr_ra) +\
          'Dec: {}\n'.format(psr_dec) +\
@@ -197,6 +204,12 @@ output += flux_density_str +\
          'Characteristic age: {:.3e} yr\n'.format(psr_char_age.value) +\
          'Surface magnetic field: {:.3e} G'.format(round(psr_B_S.value, 3)) +\
          visible_telescopes
+
+if pta_list != '':
+    pta_list = '\nPTAs: ' + pta_list
+    if pta_list[-1] == ' ':
+        pta_list = pta_list[:-2]
+    output += pta_list + '\n'
 
 if len(output + wiki_link) > 280:
     print('Wikipedia link exists but will not be included; length of Tweet' +\
