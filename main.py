@@ -27,7 +27,7 @@ access_token = ''
 access_token_secret = ''
 
 pta_file = 'pta_pulsars.yaml'
-pta_database = yaml.load(open(pta_file))
+pta_database = yaml.load(open('{}\\{}'.format(directory, pta_file)))
 
 # The script can be run in different modes. The default is to tweet
 # out the results, but you can use the -local flag to run things
